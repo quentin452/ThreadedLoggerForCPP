@@ -3,7 +3,6 @@
 # ThreadedLoggerForCPP
 A separate thread for logging for c++ projects
 
-See main.cpp in src/ to see code example to how to use in .cpp files
 
 how to include this library int your project :
 
@@ -11,10 +10,18 @@ how to include this library int your project :
 
 2 : copy and paste the whole code into YOUR_LIBS_FOLDER 
 
-1 : Add these lines into your CMakeLists.txt
+3 : Add these lines into your CMakeLists.txt
 
 set(LIBRAIRIES_DIR "${CMAKE_SOURCE_DIR}/YOUR_LIBS_FOLDER")
 
 set(ALL_INCLUDE_DIR "${LIBRAIRIES_DIR}/ThreadedLoggerForCPP-VersionX.X/include")
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${ALL_INCLUDE_DIR})
+
+
+4 : See main.cpp in src/ to see code example to how to use in .cpp files
+
+5 : Make a global for the LoggerInstance that will be used in these calls by example : LoggerGlobals::YourGlobalLoggerInstance.ExitLoggerThread(); LoggerGlobals::YourGlobalLoggerInstance.logMessageAsync etc....
+(see CreateGlobalsLoggerInstanceExample.h and .cpp in src/)
+
+6 : now it should be okay to use the threaded logger

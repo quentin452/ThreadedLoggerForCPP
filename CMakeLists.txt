@@ -26,7 +26,7 @@ set(SOURCES_FILES ${SOURCES})
 
 # External libraries include directories
 set(ALL_INCLUDE_DIR
-    "${LIBRAIRIES_DIR}/include"
+"${LIBRAIRIES_DIR}/libs/include"
 )
 
 # Add executable

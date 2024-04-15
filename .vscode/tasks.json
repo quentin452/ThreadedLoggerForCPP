@@ -2,7 +2,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build-ArkModIC-release",
+            "label": "build-ThreadedLoggerForCPP-release",
             "type": "shell",
             "command": "powershell.exe",
             "args": [
@@ -23,7 +23,7 @@
             "problemMatcher": []
         },
         {
-            "label": "build-ArkModIC-debug",
+            "label": "build-ThreadedLoggerForCPP-debug",
             "type": "shell",
             "command": "powershell.exe",
             "args": [
@@ -44,7 +44,7 @@
             "problemMatcher": []
         },
         {
-            "label": "run-ArkModIC-release",
+            "label": "run-ThreadedLoggerForCPP-release",
             "type": "process",
             "command": "${workspaceFolder}/build/Release/ThreadedLoggerForCPP.exe",
             "group": {
@@ -56,11 +56,11 @@
                 "panel": "shared"
             },
             "dependsOn": [
-                "build-ArkModIC-release"
+                "build-ThreadedLoggerForCPP-release"
             ]
         },
         {
-            "label": "run-ArkModIC-debug",
+            "label": "run-ThreadedLoggerForCPP-debug",
             "type": "process",
             "command": "${workspaceFolder}/build-debug/Debug/ThreadedLoggerForCPP.exe",
             "group": {
@@ -72,7 +72,7 @@
                 "panel": "shared"
             },
             "dependsOn": [
-                "build-ArkModIC-debug"
+                "build-ThreadedLoggerForCPP-debug"
             ]
         }
     ]

@@ -1,6 +1,10 @@
-#include "ThreadedLoggerForCPP/LoggerFileSystem.h"
-#include "ThreadedLoggerForCPP/LoggerGlobals.h"
-#include "ThreadedLoggerForCPP/LoggerThread.h"
+#include "CreateGlobalsLoggerInstanceExample.h"
+
+
+#include <ThreadedLoggerForCPP/LoggerFileSystem.hpp>
+#include <ThreadedLoggerForCPP/LoggerGlobals.hpp>
+#include <ThreadedLoggerForCPP/LoggerThread.hpp>
+
 #include <csignal>
 #include <cstdlib>
 #include <iostream>
@@ -28,27 +32,24 @@ int main(int argc, char *args[]) {
       "C:\\Users\\" + LoggerGlobals::UsernameDirectory +
       "\\.ThreadedLoggerForCPPTest\\logging\\LogBackup\\LuaCraftCPP-";
 
-  LoggerGlobals::LoggerInstance.StartLoggerThread(
+  CreateGlobalsLoggerInstanceExample::LoggerInstance.StartLoggerThread(
       LoggerGlobals::LogFolderPath, LoggerGlobals::LogFilePath,
       LoggerGlobals::LogFolderBackupPath, LoggerGlobals::LogFileBackupPath);
 
   // Loop
   while (true) {
     // Log messages
-    LoggerGlobals::LoggerInstance.logMessageAsync(
+    CreateGlobalsLoggerInstanceExample::LoggerInstance.logMessageAsync(
         LogLevel::INFO, "Test Value: " + std::to_string(test));
-    LoggerGlobals::LoggerInstance.logMessageAsync(LogLevel::INFO,
-                                                  "Finish Loop...");
+    CreateGlobalsLoggerInstanceExample::LoggerInstance.logMessageAsync(
+        LogLevel::INFO, "Finish Loop...");
 
     // Wait for some time before checking again
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
-    // Note: I call ExitLoggerThread within the while loop because I don't have
-    // another exit condition, but you can call ExitLoggerThread when you exit
-    // your window created by SDL or another library to stop the logging thread
-    // and save a copy of the logs
-    LoggerGlobals::LoggerInstance.ExitLoggerThread();
   }
 
+  // Note: This call while not work because i don't had exit condition (and so it will don't make log backup and will not reset Backup log)
+  // but for you it should work
+  CreateGlobalsLoggerInstanceExample::LoggerInstance.ExitLoggerThread();
   return 0;
 }
