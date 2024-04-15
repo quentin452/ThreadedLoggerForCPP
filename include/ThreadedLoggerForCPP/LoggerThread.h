@@ -21,7 +21,10 @@ public:
 
   void logMessageAsync(LogLevel level, const std::string &message);
   void ExitLoggerThread();
-  void StartLoggerThread();
+  void StartLoggerThread(const std::string &LogFolderPath,
+                         const std::string &LogFilePath,
+                         const std::string &LogFolderBackupPath,
+                         const std::string &LogFileBackupPath);
   void flushToFile();
 
   template <typename... Args>
@@ -38,7 +41,10 @@ private:
   bool Done_Logger_Thread;
   std::ofstream logFile;
   std::string logFilePath_;
-  std::ofstream logFilePath;
+  std::string LogFolderPathForTheThread;
+  std::string LogFilePathForTheThread;
+  std::string LogFolderBackupPathForTheThread;
+  std::string LogFileBackupPathForTheThread;
   template <typename T> void append(std::ostringstream &oss, const T &arg);
   template <typename T, typename... Args>
   void append(std::ostringstream &oss, const T &first, const Args &...args);

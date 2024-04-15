@@ -13,24 +13,8 @@
 #include <sstream>
 
 LoggerThread::LoggerThread() : Done_Logger_Thread(false) {
-  LoggerGlobals::UsernameDirectory = std::getenv("USERNAME");
-  // Create necessary directories and files
-  LoggerFileSystem::createDirectories("C:\\Users\\" +
-                                      LoggerGlobals::UsernameDirectory +
-                                      "\\.ThreadedLoggerForCPPTest\\logging\\");
-  LoggerFileSystem::createDirectories(
-      "C:\\Users\\" + LoggerGlobals::UsernameDirectory +
-      "\\.ThreadedLoggerForCPPTest\\logging\\LogBackup");
-  LoggerFileSystem::createFile(
-      "C:\\Users\\" + LoggerGlobals::UsernameDirectory +
-      "\\.ThreadedLoggerForCPPTest\\logging\\LuaCraftCPP.log");
-  std::string logFilePath =
-      "C:\\Users\\" + LoggerGlobals::UsernameDirectory +
-      "\\.ThreadedLoggerForCPPTest\\logging\\LuaCraftCPP.log";
-
-  logFile.open(logFilePath, std::ios::trunc);
+  logFile.open(LogFilePathForTheThread, std::ios::trunc);
   logFile.close();
-  logFilePath_ = logFilePath;
   std::thread workerThread(&LoggerThread::logWorker, this);
   workerThread.detach();
 }
@@ -137,19 +121,27 @@ std::string LoggerThread::getTimestamp() {
 }
 
 void LoggerThread::ExitLoggerThread() {
-  std::string timestamp = getTimestamp();
-  std::string src = "C:\\Users\\" + LoggerGlobals::UsernameDirectory +
-                    "\\.ThreadedLoggerForCPPTest\\logging\\LuaCraftCPP.log";
-
+  LoggerGlobals::TimeStamp = getTimestamp();
+  std::string src = LogFilePathForTheThread;
   std::string dst =
-      "C:\\Users\\" + LoggerGlobals::UsernameDirectory +
-      "\\.ThreadedLoggerForCPPTest\\logging\\LogBackup\\LuaCraftCPP-" +
-      timestamp + ".log";
+      LogFileBackupPathForTheThread + LoggerGlobals::TimeStamp + ".log";
   this->copyFile(src, dst);
+ // std::remove(LogFilePathForTheThread.c_str());
   Done_Logger_Thread = true;
   Unlock_Logger_Thread.notify_one();
 }
 
-void LoggerThread::StartLoggerThread() {
+void LoggerThread::StartLoggerThread(const std::string &LogFolderPath,
+                                     const std::string &LogFilePath,
+                                     const std::string &LogFolderBackupPath,
+                                     const std::string &LogFileBackupPath) {
+  this->LogFolderPathForTheThread = LogFolderPath;
+  this->LogFilePathForTheThread = LogFilePath;
+  this->logFilePath_ = LogFilePath;
+  this->LogFolderBackupPathForTheThread = LogFolderBackupPath;
+  this->LogFileBackupPathForTheThread = LogFileBackupPath;
+  LoggerFileSystem::createDirectories(LogFolderBackupPathForTheThread);
+  LoggerFileSystem::createDirectories(LogFolderPathForTheThread);
+  LoggerFileSystem::createFile(LogFilePathForTheThread);
   LoggerGlobals::LogThread = std::thread(&LoggerThread::logWorker, this);
 }

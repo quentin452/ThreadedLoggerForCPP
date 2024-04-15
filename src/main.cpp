@@ -1,5 +1,6 @@
+#include "ThreadedLoggerForCPP/LoggerFileSystem.h"
 #include "ThreadedLoggerForCPP/LoggerGlobals.h"
-#include "ThreadedLoggerForCPP/LoggerThreadStarter.h"
+#include "ThreadedLoggerForCPP/LoggerThread.h"
 #include <csignal>
 #include <cstdlib>
 #include <iostream>
@@ -9,22 +10,30 @@
 // Declaration of test as int
 int test = 99;
 
-// Declaration of a variable to store the signal status
-volatile std::sig_atomic_t g_signal_status;
-
-// Function to handle signals
-void signal_handler(int signal) { g_signal_status = signal; }
-
 int main(int argc, char *args[]) {
-  // Start LuaCraft threads
-  LoggerThreadStarter::LuaCraftStartAllThreads();
+  // Collect Your UserName from C:\Users
+  LoggerGlobals::UsernameDirectory = std::getenv("USERNAME");
 
-  // Capture SIGINT (Ctrl+C) and SIGTERM (termination request) signals
-  std::signal(SIGINT, signal_handler);
-  std::signal(SIGTERM, signal_handler);
+  // Create Log File and folder
+  LoggerGlobals::LogFolderPath = "C:\\Users\\" +
+                                 LoggerGlobals::UsernameDirectory +
+                                 "\\.ThreadedLoggerForCPPTest\\logging\\";
+  LoggerGlobals::LogFilePath =
+      "C:\\Users\\" + LoggerGlobals::UsernameDirectory +
+      "\\.ThreadedLoggerForCPPTest\\logging\\LuaCraftCPP.log";
+  LoggerGlobals::LogFolderBackupPath =
+      "C:\\Users\\" + LoggerGlobals::UsernameDirectory +
+      "\\.ThreadedLoggerForCPPTest\\logging\\LogBackup";
+  LoggerGlobals::LogFileBackupPath =
+      "C:\\Users\\" + LoggerGlobals::UsernameDirectory +
+      "\\.ThreadedLoggerForCPPTest\\logging\\LogBackup\\LuaCraftCPP-";
 
-  // Loop until a signal is received
-  while (g_signal_status == 0) {
+  LoggerGlobals::LoggerInstance.StartLoggerThread(
+      LoggerGlobals::LogFolderPath, LoggerGlobals::LogFilePath,
+      LoggerGlobals::LogFolderBackupPath, LoggerGlobals::LogFileBackupPath);
+
+  // Loop
+  while (true) {
     // Log messages
     LoggerGlobals::LoggerInstance.logMessageAsync(
         LogLevel::INFO, "Test Value: " + std::to_string(test));
@@ -40,28 +49,6 @@ int main(int argc, char *args[]) {
     // and save a copy of the logs
     LoggerGlobals::LoggerInstance.ExitLoggerThread();
   }
-  // LoggerGlobals::LoggerInstance.ExitLoggerThread();
+
   return 0;
 }
-
-/* Simplified example for clarity
-
-// Declaration of test as int
-int test = 99;
-
-int main(int argc, char *args[]) {
-  // Start LuaCraft threads
-  LoggerThreadStarter::LuaCraftStartAllThreads();
-  // Loop
-  while (true) {
-    // Log messages
-    LoggerGlobals::LoggerInstance.logMessageAsync(
-        LogLevel::INFO, "Test Value: " + std::to_string(test));
-    LoggerGlobals::LoggerInstance.logMessageAsync(LogLevel::INFO,
-                                                  "Finish Loop...");
-  }
-  // Call ExitLoggerThread after destroying Window or Somewhere to exit the logger thread and save a log backup
-  // LoggerGlobals::LoggerInstance.ExitLoggerThread();
-  return 0;
-}
-*/
