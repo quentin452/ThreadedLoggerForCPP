@@ -12,7 +12,37 @@
 
 // Declaration of test as int
 int test = 99;
+void testLoggingSpeed() {
+  const int numIterations = 10000;
 
+  auto startLogAsync = std::chrono::high_resolution_clock::now();
+  for (int i = 0; i < numIterations; ++i) {
+    CreateGlobalsLoggerInstanceExample::LoggerInstance.logMessageAsync(
+        LogLevel::INFO, __FILE__, __LINE__, "logger test");
+  }
+  auto endLogAsync = std::chrono::high_resolution_clock::now();
+  auto durationLogAsync = std::chrono::duration_cast<std::chrono::milliseconds>(
+      endLogAsync - startLogAsync);
+
+  auto startStdCout = std::chrono::high_resolution_clock::now();
+  for (int i = 0; i < numIterations; ++i) {
+    std::cout << "logger test" << std::endl;
+  }
+  auto endStdCout = std::chrono::high_resolution_clock::now();
+  auto durationStdCout = std::chrono::duration_cast<std::chrono::milliseconds>(
+      endStdCout - startStdCout);
+  std::string durationStdCoutStr =
+      "Time taken by std::cout: " + std::to_string(durationStdCout.count()) +
+      " milliseconds\n";
+  CreateGlobalsLoggerInstanceExample::LoggerInstance.logMessageAsync(
+      LogLevel::INFO, __FILE__, __LINE__, durationStdCoutStr);
+
+  std::string durationLogAsyncStr = "Time taken by logMessageAsync: " +
+                                    std::to_string(durationLogAsync.count()) +
+                                    " milliseconds\n";
+  CreateGlobalsLoggerInstanceExample::LoggerInstance.logMessageAsync(
+      LogLevel::INFO, __FILE__, __LINE__, durationLogAsyncStr);
+}
 int main(int argc, char *args[]) {
   // Collect Your UserName from C:\Users
   LoggerGlobals::UsernameDirectory = std::getenv("USERNAME");
@@ -24,23 +54,24 @@ int main(int argc, char *args[]) {
                                  "\\.ThreadedLoggerForCPPTest\\logging\\";
   LoggerGlobals::LogFilePath =
       "C:\\Users\\" + LoggerGlobals::UsernameDirectory +
-      "\\.ThreadedLoggerForCPPTest\\logging\\LuaCraftCPP.log";
+      "\\.ThreadedLoggerForCPPTest\\logging\\ThreadedLoggerForCPP.log";
   LoggerGlobals::LogFolderBackupPath =
       "C:\\Users\\" + LoggerGlobals::UsernameDirectory +
       "\\.ThreadedLoggerForCPPTest\\logging\\LogBackup";
   LoggerGlobals::LogFileBackupPath =
       "C:\\Users\\" + LoggerGlobals::UsernameDirectory +
-      "\\.ThreadedLoggerForCPPTest\\logging\\LogBackup\\LuaCraftCPP-";
+      "\\.ThreadedLoggerForCPPTest\\logging\\LogBackup\\ThreadedLoggerForCPP-";
 
   CreateGlobalsLoggerInstanceExample::LoggerInstance.StartLoggerThread(
       LoggerGlobals::LogFolderPath, LoggerGlobals::LogFilePath,
       LoggerGlobals::LogFolderBackupPath, LoggerGlobals::LogFileBackupPath);
-
+  testLoggingSpeed();
   // Loop
   while (true) {
     // Log messages
     CreateGlobalsLoggerInstanceExample::LoggerInstance.logMessageAsync(
-        LogLevel::INFO, __FILE__, __LINE__, "Test Value: " + std::to_string(test));
+        LogLevel::INFO, __FILE__, __LINE__,
+        "Test Value: " + std::to_string(test));
     CreateGlobalsLoggerInstanceExample::LoggerInstance.logMessageAsync(
         LogLevel::INFO, __FILE__, __LINE__, "Finish Loop...");
 
