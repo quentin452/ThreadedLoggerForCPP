@@ -117,7 +117,7 @@ private:
     case LogLevel::WARNING:
       oss << "[WARNING] ";
       break;
-    case LogLevel::ERROR:
+    case LogLevel::ERRORING:
       oss << "[ERROR] ";
       break;
     case LogLevel::LOGICERROR:

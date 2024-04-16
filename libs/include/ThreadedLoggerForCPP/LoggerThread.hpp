@@ -19,7 +19,7 @@
 #include <thread>
 #include <vector>
 
-enum class LogLevel { INFO, WARNING, ERROR, LOGICERROR };
+enum class LogLevel { INFO, WARNING, ERRORING, LOGICERROR };
 
 class LoggerThread {
 public:
@@ -115,7 +115,7 @@ private:
     case LogLevel::WARNING:
       oss << "[WARNING] ";
       break;
-    case LogLevel::ERROR:
+    case LogLevel::ERRORING:
       oss << "[ERROR] ";
       break;
     case LogLevel::LOGICERROR:
