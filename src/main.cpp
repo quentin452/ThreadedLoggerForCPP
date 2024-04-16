@@ -1,6 +1,5 @@
 #include "CreateGlobalsLoggerInstanceExample.h"
 
-
 #include <ThreadedLoggerForCPP/LoggerFileSystem.hpp>
 #include <ThreadedLoggerForCPP/LoggerGlobals.hpp>
 #include <ThreadedLoggerForCPP/LoggerThread.hpp>
@@ -17,7 +16,8 @@ int test = 99;
 int main(int argc, char *args[]) {
   // Collect Your UserName from C:\Users
   LoggerGlobals::UsernameDirectory = std::getenv("USERNAME");
-
+  // this is the folder that contain your src files like main.cpp
+  LoggerGlobals::SrcProjectDirectory = "src";
   // Create Log File and folder
   LoggerGlobals::LogFolderPath = "C:\\Users\\" +
                                  LoggerGlobals::UsernameDirectory +
@@ -40,16 +40,17 @@ int main(int argc, char *args[]) {
   while (true) {
     // Log messages
     CreateGlobalsLoggerInstanceExample::LoggerInstance.logMessageAsync(
-        LogLevel::INFO, "Test Value: " + std::to_string(test));
+        LogLevel::INFO, __FILE__, __LINE__, "Test Value: " + std::to_string(test));
     CreateGlobalsLoggerInstanceExample::LoggerInstance.logMessageAsync(
-        LogLevel::INFO, "Finish Loop...");
+        LogLevel::INFO, __FILE__, __LINE__, "Finish Loop...");
 
     // Wait for some time before checking again
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   }
 
-  // Note: This call while not work because i don't had exit condition (and so it will don't make log backup and will not reset Backup log)
-  // but for you it should work
+  // Note: This call while not work because i don't had exit condition (and so
+  // it will don't make log backup and will not reset Backup log) but for you it
+  // should work
   CreateGlobalsLoggerInstanceExample::LoggerInstance.ExitLoggerThread();
   return 0;
 }
