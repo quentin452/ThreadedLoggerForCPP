@@ -32,8 +32,8 @@ public:
     {
       std::unique_lock<std::mutex> lock(mtx);
       Done_Logger_Thread = true;
+      Unlock_Logger_Thread.notify_one(); // Notify worker thread to stop
     }
-    Unlock_Logger_Thread.notify_one(); // Notify worker thread to stop
     if (LogThread.joinable()) {
       LogThread.join(); // Wait for the worker thread to finish
     }
@@ -47,15 +47,20 @@ public:
   }
 
   void ExitLoggerThread() {
+    {
+      std::unique_lock<std::mutex> lock(mtx);
+      Done_Logger_Thread = true;
+      Unlock_Logger_Thread.notify_one(); // Notify worker thread to stop
+    }
+    if (LogThread.joinable()) {
+      LogThread.join(); // Wait for the worker thread to finish
+    }
+
+    // After the thread has finished, perform cleanup tasks
     TimeStamp = getTimestamp();
     std::string src = LogFilePathForTheThread;
     std::string dst = LogFileBackupPathForTheThread + TimeStamp + ".log";
     this->copyFile(src, dst);
-    Done_Logger_Thread = true;
-    Unlock_Logger_Thread.notify_one();
-    if (LogThread.joinable()) {
-      LogThread.join(); // Wait for the worker thread to finish
-    }
   }
 
   void StartLoggerThread(const std::string &LogFolderPath,
