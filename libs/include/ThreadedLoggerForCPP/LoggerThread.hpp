@@ -34,8 +34,8 @@ public:
       Done_Logger_Thread = true;
       Unlock_Logger_Thread.notify_one(); // Notify worker thread to stop
     }
-    if (LogThread.joinable()) {
-      LogThread.join(); // Wait for the worker thread to finish
+    if (logFile.is_open()) {
+      logFile.close();
     }
   }
 
@@ -51,17 +51,21 @@ public:
       std::unique_lock<std::mutex> lock(mtx);
       Done_Logger_Thread = true;
       AppClosing = true;
+      while (!tasks.empty()) {
+        auto task = tasks.front();
+        tasks.pop();
+        task();
+      }
       Unlock_Logger_Thread.notify_one(); // Notify worker thread to stop
     }
-    if (LogThread.joinable()) {
-      LogThread.join(); // Wait for the worker thread to finish
-    }
+    logFile.close(); // Close the log file
 
     // After the thread has finished, perform cleanup tasks
     TimeStamp = getTimestamp();
     std::string src = LogFilePathForTheThread;
     std::string dst = LogFileBackupPathForTheThread + TimeStamp + ".log";
     this->copyFile(src, dst);
+    AppClosing = true;
   }
   void StartLoggerThread(const std::string &LogFolderPath,
                          const std::string &LogFilePath,
@@ -97,28 +101,26 @@ private:
   std::string TimeStamp;
 
   void logWorker() {
-    if (AppClosing == false) {
-      while (true) {
-        if (AppClosing) {
+    while (AppClosing == false) {
+      std::function<void()> task;
+      {
+        std::unique_lock<std::mutex> lock(mtx);
+        Unlock_Logger_Thread.wait(lock, [this] {
+          return !tasks.empty() || Done_Logger_Thread || AppClosing;
+        });
+        if (Done_Logger_Thread || AppClosing) {
           break;
         }
-        std::function<void()> task;
-        {
-          std::unique_lock<std::mutex> lock(mtx);
-          Unlock_Logger_Thread.wait(lock, [this] {
-            return !tasks.empty() || Done_Logger_Thread || AppClosing;
-          });
-          if (Done_Logger_Thread) {
-            break;
-          }
-          if (tasks.empty()) {
-            continue;
-          }
-          task = std::move(tasks.front());
-          tasks.pop();
+        if (tasks.empty()) {
+          continue;
         }
-        task();
+        task = std::move(tasks.front());
+        tasks.pop();
       }
+      if (AppClosing) {
+        break;
+      }
+      task();
     }
   }
 
@@ -150,20 +152,16 @@ private:
   }
 
   std::string extractRelativePath(const std::string &filePath) {
-    std::string relativePath;
     size_t found = filePath.find_last_of("/\\");
     if (found != std::string::npos) {
-      std::string folder = filePath.substr(0, found);
-      size_t srcIndex = folder.rfind(LoggerGlobals::SrcProjectDirectory);
+      size_t srcIndex =
+          filePath.rfind(LoggerGlobals::SrcProjectDirectory, found);
       if (srcIndex != std::string::npos) {
-        relativePath = folder.substr(srcIndex) + filePath.substr(found);
-      } else {
-        relativePath = filePath.substr(found);
+        return filePath.substr(srcIndex);
       }
-    } else {
-      relativePath = filePath;
+      return filePath.substr(found);
     }
-    return relativePath;
+    return filePath;
   }
 
   template <typename T> void append(std::ostringstream &oss, const T &arg) {
