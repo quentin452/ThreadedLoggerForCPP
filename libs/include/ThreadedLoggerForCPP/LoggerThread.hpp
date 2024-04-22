@@ -23,7 +23,7 @@ enum class LogLevel { INFO, WARNING, ERRORING, LOGICERROR };
 
 class LoggerThread {
 public:
-  LoggerThread() : Done_Logger_Thread(false) {
+  LoggerThread() : Done_Logger_Thread(false), AppClosing(false) {
     std::thread workerThread(&LoggerThread::logWorker, this);
     workerThread.detach();
   }
@@ -50,6 +50,7 @@ public:
     {
       std::unique_lock<std::mutex> lock(mtx);
       Done_Logger_Thread = true;
+      AppClosing = true;
       Unlock_Logger_Thread.notify_one(); // Notify worker thread to stop
     }
     if (LogThread.joinable()) {
@@ -62,7 +63,6 @@ public:
     std::string dst = LogFileBackupPathForTheThread + TimeStamp + ".log";
     this->copyFile(src, dst);
   }
-
   void StartLoggerThread(const std::string &LogFolderPath,
                          const std::string &LogFilePath,
                          const std::string &LogFolderBackupPath,
@@ -87,6 +87,7 @@ private:
   std::mutex mtx;
   std::condition_variable Unlock_Logger_Thread;
   bool Done_Logger_Thread;
+  bool AppClosing;
   std::ofstream logFile;
   std::string logFilePath_;
   std::string LogFolderPathForTheThread;
@@ -96,22 +97,28 @@ private:
   std::string TimeStamp;
 
   void logWorker() {
-    while (true) {
-      std::function<void()> task;
-      {
-        std::unique_lock<std::mutex> lock(mtx);
-        Unlock_Logger_Thread.wait(
-            lock, [this] { return !tasks.empty() || Done_Logger_Thread; });
-        if (Done_Logger_Thread && tasks.empty()) {
+    if (AppClosing == false) {
+      while (true) {
+        if (AppClosing) {
           break;
         }
-        if (tasks.empty()) {
-          continue;
+        std::function<void()> task;
+        {
+          std::unique_lock<std::mutex> lock(mtx);
+          Unlock_Logger_Thread.wait(lock, [this] {
+            return !tasks.empty() || Done_Logger_Thread || AppClosing;
+          });
+          if (Done_Logger_Thread) {
+            break;
+          }
+          if (tasks.empty()) {
+            continue;
+          }
+          task = std::move(tasks.front());
+          tasks.pop();
         }
-        task = std::move(tasks.front());
-        tasks.pop();
+        task();
       }
-      task();
     }
   }
 
