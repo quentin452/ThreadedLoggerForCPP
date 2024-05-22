@@ -1,6 +1,8 @@
-#pragma once
+#ifndef LOGGER_THREAD_HPP
+#define LOGGER_THREAD_HPP
 
-enum class LogLevel { INFO, WARNING, ERRORING, LOGICERROR };
+#include "LoggerFileSystem.hpp"
+#include "LoggerGlobals.hpp"
 
 #include <condition_variable>
 #include <cstdio>
@@ -18,8 +20,7 @@ enum class LogLevel { INFO, WARNING, ERRORING, LOGICERROR };
 #include <thread>
 #include <vector>
 
-#include <ThreadedLoggerForCPP/LoggerFileSystem.hpp>
-#include <ThreadedLoggerForCPP/LoggerGlobals.hpp>
+enum class LogLevel { INFO, WARNING, ERRORING, LOGICERROR };
 
 class LoggerThread {
 #ifndef __ANDROID__
@@ -98,6 +99,10 @@ public:
     LoggerFileSystem::createFile(LogFilePathForTheThread);
 
     LogThread = std::thread(&LoggerThread::logWorker, this);
+    logFile.open(logFilePath_, std::ios::app);
+    if (!logFile.is_open()) {
+      std::cerr << "Error: Unable to open log file.\n";
+    }
   }
 
 private:
@@ -162,8 +167,12 @@ private:
     append(oss, args...);
     std::string message = oss.str();
     std::cout << message << std::endl;
-    std::ofstream logFile(logFilePath_, std::ios::app);
-    logFile << message << std::endl; // Write to file
+    if (logFile.is_open()) {
+      std::lock_guard<std::mutex> lock(mtx); // Lock before writing
+      logFile << message << std::endl;       // Write to file
+    } else {
+      std::cerr << "Error: Unable to write to log file.\n";
+    }
   }
 
   std::string extractRelativePath(const std::string &filePath) {
@@ -202,7 +211,7 @@ private:
                 << ".\n";
       src.close();
       return;
-    };
+    }
     dst << src.rdbuf(); // Efficiently copy file
     src.close();
     dst.close();
@@ -238,29 +247,29 @@ public:
                        const std::initializer_list<std::string> &messageParts) {
   }
 
-  void ExitLoggerThread(){
-    {}
+  void ExitLoggerThread() {}
 
-    void StartLoggerThread(const std::string &LogFolderPath,
-                           const std::string &LogFilePath,
-                           const std::string &LogFolderBackupPath,
-                           const std::string &LogFileBackupPath){}
+  void StartLoggerThread(const std::string &LogFolderPath,
+                         const std::string &LogFilePath,
+                         const std::string &LogFolderBackupPath,
+                         const std::string &LogFileBackupPath) {}
 
-    private : void logWorker(){}
+private:
+  void logWorker() {}
 
-    template <typename... Args>
-    void logMessage(LogLevel level, const std::string &sourceFile, int line,
-                    const Args &...args){}
+  template <typename... Args>
+  void logMessage(LogLevel level, const std::string &sourceFile, int line,
+                  const Args &...args) {}
 
-    template <typename T>
-    void append(std::ostringstream & oss, const T &arg){}
+  template <typename T> void append(std::ostringstream &oss, const T &arg) {}
 
-    template <typename T, typename... Args>
-    void append(std::ostringstream & oss, const T &first, const Args &...args){}
+  template <typename T, typename... Args>
+  void append(std::ostringstream &oss, const T &first, const Args &...args) {}
 
-    void copyFile(const std::string &source, const std::string &dest){}
+  void copyFile(const std::string &source, const std::string &dest) {}
 #endif
 #endif
 #endif
 #endif
 };
+#endif // LOGGER_THREAD_HPP
