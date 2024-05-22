@@ -1,8 +1,7 @@
-#ifndef LOGGER_THREAD_HPP
-#define LOGGER_THREAD_HPP
+#pragma once
 
-#include <ThreadedLoggerForCPP/LoggerFileSystem.hpp>
-#include <ThreadedLoggerForCPP/LoggerGlobals.hpp>
+enum class LogLevel { INFO, WARNING, ERRORING, LOGICERROR };
+
 #include <condition_variable>
 #include <cstdio>
 #include <cstdlib>
@@ -19,9 +18,14 @@
 #include <thread>
 #include <vector>
 
-enum class LogLevel { INFO, WARNING, ERRORING, LOGICERROR };
+#include <ThreadedLoggerForCPP/LoggerFileSystem.hpp>
+#include <ThreadedLoggerForCPP/LoggerGlobals.hpp>
 
 class LoggerThread {
+#ifndef __ANDROID__
+#ifndef __NINTENDO__
+#ifndef EMSCRIPTEN
+#ifndef TARGET_OS_IPHONE
 public:
   LoggerThread() : Done_Logger_Thread(false), AppClosing(false) {
     std::thread workerThread(&LoggerThread::logWorker, this);
@@ -78,6 +82,7 @@ public:
     this->copyFile(src, dst);
     AppClosing = true;
   }
+
   void StartLoggerThread(const std::string &LogFolderPath,
                          const std::string &LogFilePath,
                          const std::string &LogFolderBackupPath,
@@ -91,11 +96,9 @@ public:
     LoggerFileSystem::createDirectories(LogFolderBackupPathForTheThread);
     LoggerFileSystem::createDirectories(LogFolderPathForTheThread);
     LoggerFileSystem::createFile(LogFilePathForTheThread);
+
     LogThread = std::thread(&LoggerThread::logWorker, this);
   }
-
-  std::thread &getGlobalLogThread() { return LogThread; }
-  std::thread LogThread;
 
 private:
   std::queue<std::function<void()>> tasks;
@@ -110,6 +113,7 @@ private:
   std::string LogFolderBackupPathForTheThread;
   std::string LogFileBackupPathForTheThread;
   std::string TimeStamp;
+  std::thread LogThread;
 
   void logWorker() {
     while (AppClosing == false) {
@@ -209,13 +213,54 @@ private:
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
 
     struct tm timeinfo;
+
+#ifdef _WIN32
     localtime_s(&timeinfo, &in_time_t);
+#else
+    localtime_r(&timeinfo, &in_time_t);
+#endif
 
     char buffer[80];
     strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H-%M-%S", &timeinfo);
 
     return std::string(buffer);
   }
-};
+#else
+public:
+  LoggerThread() {}
 
-#endif // LOGGER_THREAD_HPP
+  ~LoggerThread() {}
+
+  void logMessageAsync(LogLevel level, const std::string &sourceFile, int line,
+                       const std::string &message) {}
+
+  void logMessageAsync(LogLevel level, const std::string &sourceFile, int line,
+                       const std::initializer_list<std::string> &messageParts) {
+  }
+
+  void ExitLoggerThread(){
+    {}
+
+    void StartLoggerThread(const std::string &LogFolderPath,
+                           const std::string &LogFilePath,
+                           const std::string &LogFolderBackupPath,
+                           const std::string &LogFileBackupPath){}
+
+    private : void logWorker(){}
+
+    template <typename... Args>
+    void logMessage(LogLevel level, const std::string &sourceFile, int line,
+                    const Args &...args){}
+
+    template <typename T>
+    void append(std::ostringstream & oss, const T &arg){}
+
+    template <typename T, typename... Args>
+    void append(std::ostringstream & oss, const T &first, const Args &...args){}
+
+    void copyFile(const std::string &source, const std::string &dest){}
+#endif
+#endif
+#endif
+#endif
+};

@@ -1,13 +1,16 @@
-#ifndef LOGGERFILESYSTEM_HPP
-#define LOGGERFILESYSTEM_HPP
+#pragma once
 
 #include <ThreadedLoggerForCPP/LoggerThread.hpp>
-#include <string>
-#include <sys/stat.h>
 #include <fstream>
 #include <iostream>
+#include <string>
+#include <sys/stat.h>
 
 class LoggerFileSystem {
+#ifndef __ANDROID__
+#ifndef __NINTENDO__
+#ifndef EMSCRIPTEN
+#ifndef TARGET_OS_IPHONE
 public:
   static bool fileExists(const std::string &filename) {
     struct stat buffer;
@@ -49,6 +52,17 @@ public:
     }
     return true;
   }
-};
+#else
+public:
+  static bool fileExists(const std::string &filename) { return false; }
 
-#endif // LOGGERFILESYSTEM_HPP
+  static bool createFile(const std::string &filename) { return false; }
+
+  static bool directoryExists(const std::string &path) { return false; }
+
+  static bool createDirectories(const std::string &path) { return false; }
+#endif
+#endif
+#endif
+#endif
+};

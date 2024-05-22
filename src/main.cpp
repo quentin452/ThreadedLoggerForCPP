@@ -45,7 +45,12 @@ void testLoggingSpeed() {
 }
 int main(int argc, char *args[]) {
   // Collect Your UserName from C:\Users
-  LoggerGlobals::UsernameDirectory = std::getenv("USERNAME");
+    #ifdef _WIN32
+    LoggerGlobals::UsernameDirectory = std::getenv("USERNAME");
+    #else
+    LoggerGlobals::UsernameDirectory = std::getenv("USER");
+    #endif
+
   // this is the folder that contain your src files like main.cpp
   LoggerGlobals::SrcProjectDirectory = "src";
   // Create Log File and folder

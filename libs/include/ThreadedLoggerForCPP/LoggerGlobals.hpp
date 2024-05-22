@@ -1,5 +1,4 @@
-#ifndef LOGGERGLOBALS_HPP
-#define LOGGERGLOBALS_HPP
+#pragma once
 
 #include <atomic>
 #include <mutex>
@@ -15,5 +14,3 @@ public:
   static inline std::string LogFileBackupPath;
   static inline std::string SrcProjectDirectory;
 };
-
-#endif
