@@ -74,14 +74,16 @@ public:
       }
       Unlock_Logger_Thread.notify_one(); // Notify worker thread to stop
     }
-    logFile.close(); // Close the log file
-
-    // After the thread has finished, perform cleanup tasks
+    if (LogThread.joinable()) {
+      LogThread.join();
+    }
+    if (logFile.is_open()) {
+      logFile.close();
+    }
     TimeStamp = getTimestamp();
     std::string src = LogFilePathForTheThread;
     std::string dst = LogFileBackupPathForTheThread + TimeStamp + ".log";
     this->copyFile(src, dst);
-    AppClosing = true;
   }
 
   void StartLoggerThread(const std::string &LogFolderPath,
