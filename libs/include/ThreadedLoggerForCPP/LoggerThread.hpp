@@ -29,8 +29,7 @@ class LoggerThread {
 #ifndef TARGET_OS_IPHONE
 public:
   LoggerThread() : Done_Logger_Thread(false), AppClosing(false) {
-    std::thread workerThread(&LoggerThread::logWorker, this);
-    workerThread.detach();
+    workerThread = std::thread(&LoggerThread::logWorker, this);
   }
 
   ~LoggerThread() {
@@ -38,6 +37,9 @@ public:
       std::unique_lock<std::mutex> lock(mtx);
       Done_Logger_Thread = true;
       Unlock_Logger_Thread.notify_one(); // Notify worker thread to stop
+    }
+    if (workerThread.joinable()) {
+      workerThread.join(); // Wait for worker thread to finish
     }
     if (logFile.is_open()) {
       logFile.close();
@@ -67,19 +69,15 @@ public:
       std::unique_lock<std::mutex> lock(mtx);
       Done_Logger_Thread = true;
       AppClosing = true;
-      while (!tasks.empty()) {
-        auto task = tasks.front();
-        tasks.pop();
-        task();
-      }
       Unlock_Logger_Thread.notify_one(); // Notify worker thread to stop
     }
     if (LogThread.joinable()) {
-      LogThread.join();
+      LogThread.join(); // Wait for the worker thread to finish
     }
     if (logFile.is_open()) {
       logFile.close();
     }
+    // Perform cleanup tasks
     TimeStamp = getTimestamp();
     std::string src = LogFilePathForTheThread;
     std::string dst = LogFileBackupPathForTheThread + TimeStamp + ".log";
@@ -108,6 +106,7 @@ public:
   }
 
 private:
+  std::thread workerThread;
   std::queue<std::function<void()>> tasks;
   std::mutex mtx;
   std::condition_variable Unlock_Logger_Thread;
