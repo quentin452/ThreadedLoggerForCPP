@@ -31,7 +31,6 @@ public:
   LoggerThread() : Done_Logger_Thread(false) {
     workerThread = std::thread(&LoggerThread::logWorker, this);
   }
-
   ~LoggerThread() {
     {
       std::unique_lock<std::mutex> lock(mtx);
@@ -82,23 +81,25 @@ public:
     std::string dst = LogFileBackupPathForTheThread + TimeStamp + ".log";
     this->copyFile(src, dst);
   }
-
   void StartLoggerThread(const std::string &LogFolderPath,
                          const std::string &LogFilePath,
                          const std::string &LogFolderBackupPath,
                          const std::string &LogFileBackupPath) {
+    if (LogThread.joinable()) {
+      std::cerr << "Error: Logger thread already running.\n";
+      return;
+    }
     this->LogFolderPathForTheThread = LogFolderPath;
     this->LogFilePathForTheThread = LogFilePath;
     this->logFilePath_ = LogFilePath;
     this->LogFolderBackupPathForTheThread = LogFolderBackupPath;
     this->LogFileBackupPathForTheThread = LogFileBackupPath;
-    std::remove(LogFilePathForTheThread.c_str());
     LoggerFileSystem::createDirectories(LogFolderBackupPathForTheThread);
     LoggerFileSystem::createDirectories(LogFolderPathForTheThread);
     LoggerFileSystem::createFile(LogFilePathForTheThread);
-
+    logFile.open(logFilePath_,
+                 std::ios::out | std::ios::trunc); // Open file in truncate mode
     LogThread = std::thread(&LoggerThread::logWorker, this);
-    logFile.open(logFilePath_, std::ios::app);
     if (!logFile.is_open()) {
       std::cerr << "Error: Unable to open log file.\n";
     }
