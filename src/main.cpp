@@ -35,7 +35,7 @@ void testLoggingSpeed() {
       "Time taken by std::cout: " + std::to_string(durationStdCout.count()) +
       " milliseconds\n";
   CreateGlobalsLoggerInstanceExample::LoggerInstance.logMessageAsync(
-      LogLevel::INFO, __FILE__, __LINE__, durationStdCoutStr);
+      LogLevel::INFO, __FILE_, __LINE__, durationStdCoutStr);_
 
   std::string durationLogAsyncStr = "Time taken by logMessageAsync: " +
                                     std::to_string(durationLogAsync.count()) +
