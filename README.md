@@ -23,5 +23,5 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${ALL_INCLUDE_DIR})
 
 5 : Make a global for the LoggerInstance that will be used in these calls by example : LoggerGlobals::YourGlobalLoggerInstance.ExitLoggerThread(); LoggerGlobals::YourGlobalLoggerInstance.logMessageAsync etc....
 (see CreateGlobalsLoggerInstanceExample.h ,CreateGlobalsLoggerInstanceExample.cpp and main.cpp in src/)
-
+or use the GetLoggerThread if you don't want to use Global.
 6 : now it should be okay to use the threaded logger
