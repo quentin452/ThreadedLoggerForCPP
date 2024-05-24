@@ -5,20 +5,13 @@
 #include "LoggerGlobals.hpp"
 
 #include <condition_variable>
-#include <cstdio>
-#include <cstdlib>
-#include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <functional>
-#include <iomanip>
-#include <iostream>
 #include <mutex>
 #include <queue>
-#include <sstream>
 #include <string>
 #include <thread>
-#include <vector>
 
 enum class LogLevel { INFO, WARNING, ERRORING, LOGICERROR };
 
