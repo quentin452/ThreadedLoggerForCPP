@@ -24,55 +24,11 @@ class LoggerThread {
     !defined(TARGET_OS_IPHONE)
 
 public:
-  LoggerThread() : Done_Logger_Thread(false) {
+  LoggerThread() : Done_Logger_Thread(false), useFallback(false) {
     workerThread = std::thread(&LoggerThread::logWorker, this);
   }
 
   ~LoggerThread() { cleanup(); }
-
-  LoggerThread(LoggerThread &&other) noexcept
-      : workerThread(std::move(other.workerThread)),
-        tasks(std::move(other.tasks)), mtx(), Unlock_Logger_Thread(),
-        Done_Logger_Thread(
-            other.Done_Logger_Thread.load()), // use load for atomic bool
-        logFile(std::move(other.logFile)),
-        logFilePath_(std::move(other.logFilePath_)),
-        LogFolderPathForTheThread(std::move(other.LogFolderPathForTheThread)),
-        LogFilePathForTheThread(std::move(other.LogFilePathForTheThread)),
-        LogFolderBackupPathForTheThread(
-            std::move(other.LogFolderBackupPathForTheThread)),
-        LogFileBackupPathForTheThread(
-            std::move(other.LogFileBackupPathForTheThread)),
-        TimeStamp(std::move(other.TimeStamp)) {
-    other.Done_Logger_Thread = true;
-    if (!workerThread.joinable()) {
-      workerThread = std::thread(&LoggerThread::logWorker, this);
-    }
-  }
-
-  LoggerThread &operator=(LoggerThread &&other) noexcept {
-    if (this != &other) {
-      cleanup();
-      workerThread = std::move(other.workerThread);
-      tasks = std::move(other.tasks);
-      Done_Logger_Thread =
-          other.Done_Logger_Thread.load(); // use load for atomic bool
-      logFile = std::move(other.logFile);
-      logFilePath_ = std::move(other.logFilePath_);
-      LogFolderPathForTheThread = std::move(other.LogFolderPathForTheThread);
-      LogFilePathForTheThread = std::move(other.LogFilePathForTheThread);
-      LogFolderBackupPathForTheThread =
-          std::move(other.LogFolderBackupPathForTheThread);
-      LogFileBackupPathForTheThread =
-          std::move(other.LogFileBackupPathForTheThread);
-      TimeStamp = std::move(other.TimeStamp);
-      other.Done_Logger_Thread = true;
-      if (!workerThread.joinable()) {
-        workerThread = std::thread(&LoggerThread::logWorker, this);
-      }
-    }
-    return *this;
-  }
 
   static LoggerThread &GetLoggerThread() {
     if (LoggerInstanceT == nullptr) {
@@ -88,6 +44,11 @@ public:
 
   void logMessageAsync(LogLevel level, const std::string &sourceFile, int line,
                        const std::initializer_list<std::string> &messageParts) {
+    if (useFallback) {
+      logMessageFallback(level, sourceFile, line, messageParts);
+      return;
+    }
+
     std::ostringstream messageStream;
     for (const auto &part : messageParts) {
       messageStream << part;
@@ -103,7 +64,6 @@ public:
 
   void ExitLoggerThread() {
     cleanup();
-    // Perform cleanup tasks
     TimeStamp = getTimestamp();
     std::string src = LogFilePathForTheThread;
     std::string dst = LogFileBackupPathForTheThread + TimeStamp + ".log";
@@ -126,6 +86,7 @@ public:
                  std::ios::out | std::ios::trunc); // Open file in truncate mode
     if (!logFile.is_open()) {
       std::cerr << "Error: Unable to open log file.\n";
+      useFallback = true;
     }
   }
 
@@ -143,6 +104,7 @@ private:
   std::string LogFolderBackupPathForTheThread;
   std::string LogFileBackupPathForTheThread;
   std::string TimeStamp;
+  std::atomic<bool> useFallback;
 
   void logWorker() {
     while (true) {
@@ -161,9 +123,8 @@ private:
     }
   }
 
-  template <typename... Args>
-  void logMessage(LogLevel level, const std::string &sourceFile, int line,
-                  const Args &...args) {
+  std::string formatMessage(LogLevel level, const std::string &sourceFile,
+                            int line, const std::string &message) {
     std::ostringstream oss;
     switch (level) {
     case LogLevel::INFO:
@@ -180,9 +141,16 @@ private:
       break;
     }
     oss << getTimestamp() << " [" << extractRelativePath(sourceFile) << ":"
-        << line << "] ";
+        << line << "] " << message;
+    return oss.str();
+  }
+
+  template <typename... Args>
+  void logMessage(LogLevel level, const std::string &sourceFile, int line,
+                  const Args &...args) {
+    std::ostringstream oss;
     append(oss, args...);
-    std::string message = oss.str();
+    std::string message = formatMessage(level, sourceFile, line, oss.str());
     std::cout << message << std::endl;
     if (logFile.is_open()) {
       std::lock_guard<std::mutex> lock(mtx); // Lock before writing
@@ -190,6 +158,26 @@ private:
     } else {
       std::cerr << "Error: Unable to write to log file.\n";
     }
+  }
+
+  void
+  logMessageFallback(LogLevel level, const std::string &sourceFile, int line,
+                     const std::initializer_list<std::string> &messageParts) {
+    std::ofstream fallbackLogFile("fallback_log.txt",
+                                  std::ios::out |
+                                      std::ios::app); // Open in append mode
+    if (!fallbackLogFile.is_open()) {
+      std::cerr << "Error: Unable to open fallback log file.\n";
+      return;
+    }
+    std::ostringstream oss;
+    for (const auto &part : messageParts) {
+      oss << part;
+    }
+    std::string message = formatMessage(level, sourceFile, line, oss.str());
+    std::cout << message << std::endl;
+    fallbackLogFile << message << std::endl; // Write to fallback log file
+    fallbackLogFile.close();
   }
 
   std::string extractRelativePath(const std::string &filePath) {
@@ -301,4 +289,5 @@ private:
   void copyFile(const std::string &source, const std::string &dest) {}
 #endif
 };
+
 #endif // LOGGER_THREAD_HPP
