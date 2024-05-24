@@ -35,8 +35,7 @@ void testLoggingSpeed() {
       "Time taken by std::cout: " + std::to_string(durationStdCout.count()) +
       " milliseconds\n";
   CreateGlobalsLoggerInstanceExample::LoggerInstance.logMessageAsync(
-      LogLevel::INFO, __FILE_, __LINE__, durationStdCoutStr);_
-
+      LogLevel::INFO, __FILE__, __LINE__, durationStdCoutStr);
   std::string durationLogAsyncStr = "Time taken by logMessageAsync: " +
                                     std::to_string(durationLogAsync.count()) +
                                     " milliseconds\n";
@@ -45,11 +44,11 @@ void testLoggingSpeed() {
 }
 int main(int argc, char *args[]) {
   // Collect Your UserName from C:\Users
-    #ifdef _WIN32
-    LoggerGlobals::UsernameDirectory = std::getenv("USERNAME");
-    #else
-    LoggerGlobals::UsernameDirectory = std::getenv("USER");
-    #endif
+#ifdef _WIN32
+  LoggerGlobals::UsernameDirectory = std::getenv("USERNAME");
+#else
+  LoggerGlobals::UsernameDirectory = std::getenv("USER");
+#endif
 
   // this is the folder that contain your src files like main.cpp
   LoggerGlobals::SrcProjectDirectory = "src";
