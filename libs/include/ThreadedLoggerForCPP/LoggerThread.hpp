@@ -23,14 +23,15 @@
 enum class LogLevel { INFO, WARNING, ERRORING, LOGICERROR };
 
 class LoggerThread {
-#ifndef __ANDROID__
-#ifndef __NINTENDO__
-#ifndef EMSCRIPTEN
-#ifndef TARGET_OS_IPHONE
+#if defined(_WIN32) ||                                                         \
+    (defined(__linux__) || !defined(__ANDROID__) || !defined(EMSCRIPTEN) ||    \
+     !defined(__NINTENDO__) || !defined(TARGET_OS_IPHONE))
+
 public:
   LoggerThread() : Done_Logger_Thread(false) {
     workerThread = std::thread(&LoggerThread::logWorker, this);
   }
+
   ~LoggerThread() {
     {
       std::unique_lock<std::mutex> lock(mtx);
@@ -44,6 +45,7 @@ public:
       logFile.close();
     }
   }
+  static LoggerThread &GetLoggerThread() { return LoggerInstanceT; }
 
   void logMessageAsync(LogLevel level, const std::string &sourceFile, int line,
                        const std::string &message) {
@@ -58,8 +60,10 @@ public:
     }
     std::string message = messageStream.str();
 
-    std::unique_lock<std::mutex> lock(mtx);
-    tasks.emplace([=] { logMessage(level, sourceFile, line, message); });
+    {
+      std::unique_lock<std::mutex> lock(mtx);
+      tasks.emplace([=] { logMessage(level, sourceFile, line, message); });
+    }
     Unlock_Logger_Thread.notify_one();
   }
 
@@ -69,8 +73,8 @@ public:
       Done_Logger_Thread = true;
       Unlock_Logger_Thread.notify_one(); // Notify worker thread to stop
     }
-    if (LogThread.joinable()) {
-      LogThread.join(); // Wait for the worker thread to finish
+    if (workerThread.joinable()) {
+      workerThread.join(); // Wait for worker thread to finish
     }
     if (logFile.is_open()) {
       logFile.close();
@@ -79,16 +83,13 @@ public:
     TimeStamp = getTimestamp();
     std::string src = LogFilePathForTheThread;
     std::string dst = LogFileBackupPathForTheThread + TimeStamp + ".log";
-    this->copyFile(src, dst);
+    copyFile(src, dst);
   }
+
   void StartLoggerThread(const std::string &LogFolderPath,
                          const std::string &LogFilePath,
                          const std::string &LogFolderBackupPath,
                          const std::string &LogFileBackupPath) {
-    if (LogThread.joinable()) {
-      std::cerr << "Error: Logger thread already running.\n";
-      return;
-    }
     this->LogFolderPathForTheThread = LogFolderPath;
     this->LogFilePathForTheThread = LogFilePath;
     this->logFilePath_ = LogFilePath;
@@ -99,13 +100,14 @@ public:
     LoggerFileSystem::createFile(LogFilePathForTheThread);
     logFile.open(logFilePath_,
                  std::ios::out | std::ios::trunc); // Open file in truncate mode
-    LogThread = std::thread(&LoggerThread::logWorker, this);
     if (!logFile.is_open()) {
       std::cerr << "Error: Unable to open log file.\n";
     }
   }
 
 private:
+  static LoggerThread LoggerInstanceT;
+
   std::thread workerThread;
   std::queue<std::function<void()>> tasks;
   std::mutex mtx;
@@ -118,7 +120,6 @@ private:
   std::string LogFolderBackupPathForTheThread;
   std::string LogFileBackupPathForTheThread;
   std::string TimeStamp;
-  std::thread LogThread;
 
   void logWorker() {
     while (true) {
@@ -261,8 +262,6 @@ private:
 
   void copyFile(const std::string &source, const std::string &dest) {}
 #endif
-#endif
-#endif
-#endif
 };
+
 #endif // LOGGER_THREAD_HPP
