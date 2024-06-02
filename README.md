@@ -1,7 +1,7 @@
 # Note this code is not terminated at 100% , i need to do somethings
 
 # ThreadedLoggerForCPP
-A separate thread for logging for c++ projects
+A separate thread logger and writter to log file for c++ projects
 
 
 how to include this library int your project :
