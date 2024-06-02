@@ -10,8 +10,9 @@
 #include <string>
 #include <thread>
 
-// Declaration of test as int
+std::string _exe_game = "ThreadedLoggerForCPPTest";
 int test = 99;
+
 void testLoggingSpeed() {
   const int numIterations = 10000;
 
@@ -42,45 +43,81 @@ void testLoggingSpeed() {
   CreateGlobalsLoggerInstanceExample::LoggerInstance.logMessageAsync(
       LogLevel::INFO, __FILE__, __LINE__, durationLogAsyncStr);
 }
-int main(int argc, char *args[]) {
-  // Collect Your UserName from C:\Users
+void testLoggingGetThreadSpeed() {
+  const int numIterations = 1000;
+
+  // Test with calling GetLoggerThread each time
+  auto start1 = std::chrono::high_resolution_clock::now();
+  for (int i = 0; i < numIterations; ++i) {
+    LoggerThread::GetLoggerThread().logMessageAsync(LogLevel::INFO, __FILE__,
+                                                    __LINE__, "Test message");
+  }
+  auto end1 = std::chrono::high_resolution_clock::now();
+  auto duration1 =
+      std::chrono::duration_cast<std::chrono::milliseconds>(end1 - start1);
+
+  // Test with storing the result of GetLoggerThread
+  auto &loggerThread = LoggerThread::GetLoggerThread();
+  auto start2 = std::chrono::high_resolution_clock::now();
+  for (int i = 0; i < numIterations; ++i) {
+    loggerThread.logMessageAsync(LogLevel::INFO, __FILE__, __LINE__,
+                                 "Test message");
+  }
+  auto end2 = std::chrono::high_resolution_clock::now();
+  auto duration2 =
+      std::chrono::duration_cast<std::chrono::milliseconds>(end2 - start2);
+
+  // Print the results
+  std::cout << "Time taken with calling GetLoggerThread each time: "
+            << duration1.count() << " milliseconds\n";
+  std::cout << "Time taken with storing the result of GetLoggerThread: "
+            << duration2.count() << " milliseconds\n";
+}
+
+void InitThreadedLoggerForCPP(
+    std::string &ProjectDirectory, std::string &LogFileName,
+    std::string &GameSaveFolder) {
+#pragma warning(push)
+#pragma warning(disable : 4996) // Disable warning for getenv
 #ifdef _WIN32
   LoggerGlobals::UsernameDirectory = std::getenv("USERNAME");
 #else
   LoggerGlobals::UsernameDirectory = std::getenv("USER");
 #endif
+#pragma warning(pop)
 
-  // this is the folder that contain your src files like main.cpp
-  LoggerGlobals::SrcProjectDirectory = "src";
+  // this is the folder that contains your src files like main.cpp
+  LoggerGlobals::SrcProjectDirectory = ProjectDirectory;
   // Create Log File and folder
   LoggerGlobals::LogFolderPath = "C:\\Users\\" +
-                                 LoggerGlobals::UsernameDirectory +
-                                 "\\.ThreadedLoggerForCPPTest\\logging\\";
+                                 LoggerGlobals::UsernameDirectory + "\\." +
+                                 GameSaveFolder + "\\logging\\";
   LoggerGlobals::LogFilePath =
-      "C:\\Users\\" + LoggerGlobals::UsernameDirectory +
-      "\\.ThreadedLoggerForCPPTest\\logging\\ThreadedLoggerForCPP.log";
+      "C:\\Users\\" + LoggerGlobals::UsernameDirectory + "\\." +
+      GameSaveFolder + "\\logging\\" + LogFileName + ".log";
   LoggerGlobals::LogFolderBackupPath =
-      "C:\\Users\\" + LoggerGlobals::UsernameDirectory +
-      "\\.ThreadedLoggerForCPPTest\\logging\\LogBackup";
+      "C:\\Users\\" + LoggerGlobals::UsernameDirectory + "\\." +
+      GameSaveFolder + "\\logging\\LogBackup";
   LoggerGlobals::LogFileBackupPath =
-      "C:\\Users\\" + LoggerGlobals::UsernameDirectory +
-      "\\.ThreadedLoggerForCPPTest\\logging\\LogBackup\\ThreadedLoggerForCPP-";
+      "C:\\Users\\" + LoggerGlobals::UsernameDirectory + "\\." +
+      GameSaveFolder + "\\logging\\LogBackup\\" + LogFileName + "-";
 
-  CreateGlobalsLoggerInstanceExample::LoggerInstance.StartLoggerThread(
+  LoggerThread::GetLoggerThread().StartLoggerThread(
       LoggerGlobals::LogFolderPath, LoggerGlobals::LogFilePath,
       LoggerGlobals::LogFolderBackupPath, LoggerGlobals::LogFileBackupPath);
+}
+int main(int argc, char *args[]) {
+  InitThreadedLoggerForCPP(_exe_game,_exe_game,_exe_game);
   testLoggingSpeed();
+  testLoggingGetThreadSpeed();
   // Loop
   while (true) {
     // Log messages
-    CreateGlobalsLoggerInstanceExample::LoggerInstance.logMessageAsync(
-        LogLevel::INFO, __FILE__, __LINE__,
-        "Test Value: " + std::to_string(test));
-    CreateGlobalsLoggerInstanceExample::LoggerInstance.logMessageAsync(
-        LogLevel::INFO, __FILE__, __LINE__, "Finish Loop...");
-
-    // Wait for some time before checking again
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    // CreateGlobalsLoggerInstanceExample::LoggerInstance.logMessageAsync(
+    //    LogLevel::INFO, __FILE__, __LINE__,
+    //     "Test Value: " + std::to_string(test));
+    // CreateGlobalsLoggerInstanceExample::LoggerInstance.logMessageAsync(
+    //     LogLevel::INFO, __FILE__, __LINE__, "Finish Loop...");
   }
 
   // Note: This call while not work because i don't had exit condition (and so
