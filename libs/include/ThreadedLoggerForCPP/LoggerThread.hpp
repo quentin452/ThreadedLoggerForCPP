@@ -230,7 +230,6 @@ private:
     src.close();
     dst.close();
   }
-
   std::string getTimestamp() {
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
@@ -240,7 +239,7 @@ private:
 #ifdef _WIN32
     localtime_s(&timeinfo, &in_time_t);
 #else
-    localtime_r(&timeinfo, &in_time_t);
+    localtime_r(&in_time_t, &timeinfo);
 #endif
 
     char buffer[80];
