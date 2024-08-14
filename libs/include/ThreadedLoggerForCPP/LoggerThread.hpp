@@ -230,6 +230,7 @@ private:
     src.close();
     dst.close();
   }
+
   std::string getTimestamp() {
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
@@ -239,7 +240,7 @@ private:
 #ifdef _WIN32
     localtime_s(&timeinfo, &in_time_t);
 #else
-    localtime_r(&in_time_t, &timeinfo);
+    localtime_r(&timeinfo, &in_time_t);
 #endif
 
     char buffer[80];
@@ -297,5 +298,13 @@ private:
   void copyFile(const std::string &source, const std::string &dest) {}
 #endif
 };
-
+#if defined(_WIN32) || defined(__linux__) || !defined(__ANDROID__) ||          \
+    !defined(EMSCRIPTEN) || !defined(__NINTENDO__) ||                          \
+    !defined(TARGET_OS_IPHONE)
+#define LOGGER_THREAD(loglevel, customString)                                  \
+  LoggerThread::GetLoggerThread().logMessageAsync(loglevel, __FILE__,          \
+                                                  __LINE__, customString);
+#else
+#define LOGGER_THREAD(loglevel, customString)
+#endif
 #endif // LOGGER_THREAD_HPP
