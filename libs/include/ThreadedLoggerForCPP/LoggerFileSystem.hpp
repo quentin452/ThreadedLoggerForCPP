@@ -1,17 +1,19 @@
 #pragma once
 
-#include <ThreadedLoggerForCPP/LoggerThread.hpp>
+#include <ThreadedLoggerForCPP/LoggerThread.h>
+#include <sys/stat.h>
+
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <sys/stat.h>
+
 
 class LoggerFileSystem {
 #ifndef __ANDROID__
 #ifndef __NINTENDO__
 #ifndef EMSCRIPTEN
 #ifndef TARGET_OS_IPHONE
-public:
+ public:
   static bool fileExists(const std::string &filename) {
     struct stat buffer;
     return (stat(filename.c_str(), &buffer) == 0);
@@ -53,7 +55,7 @@ public:
     return true;
   }
 #else
-public:
+ public:
   static bool fileExists(const std::string &filename) { return false; }
 
   static bool createFile(const std::string &filename) { return false; }

@@ -1,11 +1,12 @@
 #ifndef CreateGlobalsLoggerInstanceExample_H
 #define CreateGlobalsLoggerInstanceExample_H
-#include <ThreadedLoggerForCPP/LoggerThread.hpp>
-#include <thread>
+#include <ThreadedLoggerForCPP/LoggerThread.h>
 
 #include <string>
+#include <thread>
+
 class CreateGlobalsLoggerInstanceExample {
-public:
+ public:
   static LoggerThread LoggerInstance;
 };
-#endif // CreateGlobalsLoggerInstanceExample_H
+#endif  // CreateGlobalsLoggerInstanceExample_H

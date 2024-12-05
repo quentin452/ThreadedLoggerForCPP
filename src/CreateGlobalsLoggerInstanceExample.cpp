@@ -1,6 +1,8 @@
 #include "CreateGlobalsLoggerInstanceExample.h"
-#include <ThreadedLoggerForCPP/LoggerThread.hpp>
+
+#include <ThreadedLoggerForCPP/LoggerThread.h>
+
 #include <string>
 
-LoggerThread CreateGlobalsLoggerInstanceExample::LoggerInstance;
 
+LoggerThread CreateGlobalsLoggerInstanceExample::LoggerInstance;
