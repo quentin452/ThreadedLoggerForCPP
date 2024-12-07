@@ -206,6 +206,8 @@ void LoggerThread::cleanup() {
     Done_Logger_Thread = true;
     Unlock_Logger_Thread.notify_one();  // Notify worker thread to stop
   }
+  std::queue<std::function<void()>> emptyQueue; // Made tasks queue empty to exit thread instantly when cleanuping it
+  std::swap(tasks, emptyQueue);
   if (workerThread.joinable()) {
     workerThread.join();  // Wait for worker thread to finish
   }
